@@ -58,14 +58,24 @@ def proxy_cadastro():
 def proxy_ativar_conta():
     try:
         dados_front = request.get_json(force=True)
-        payload = {"codigo": dados_front.get("codigo"), "id": dados_front.get("id")}
+        # CORREÇÃO APLICADA: Enviamos o CPF para o Java, e não mais o ID!
+        payload = {"codigo": dados_front.get("codigo"), "cpf": dados_front.get("cpf")} 
         headers = {'Content-Type': 'application/json', 'Accept': 'text/plain', 'User-Agent': 'Flutter-App'}
+        
+        # O Endpoint no Java é /usuario/verificar-codigo
         res = requests.post(f"{API_DEFENSORIA}/usuario/verificar-codigo", json=payload, headers=headers)
-        if res.status_code in [200, 202, 204]: return jsonify({"mensagem": "Conta ativada com sucesso!"}), 200
-        try: retorno = res.json()
-        except: retorno = {"mensagem": res.text}
+        
+        if res.status_code in [200, 202, 204]: 
+            return jsonify({"mensagem": "Conta ativada com sucesso!"}), 200
+            
+        try: 
+            retorno = res.json()
+        except: 
+            retorno = {"mensagem": res.text}
+            
         return jsonify(retorno), res.status_code
-    except Exception as e: return jsonify({"mensagem": str(e)}), 500
+    except Exception as e: 
+        return jsonify({"mensagem": str(e)}), 500
 
 @app.route('/api/local/usuario/envio-codigo', methods=['POST'])
 def proxy_enviar_codigo():
