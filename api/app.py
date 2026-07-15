@@ -63,8 +63,8 @@ def proxy_ativar_conta():
             "cpf": dados_front.get("cpf"),
             "codigo": dados_front.get("codigo") 
         } 
-        # O Java aceita e responde como text/plain
-        headers = {'Content-Type': 'application/json', 'Accept': 'text/plain', 'User-Agent': 'Flutter-App'}
+        # O Java agora responde como JSON
+        headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Flutter-App'}
         
         # A URL mapeada no UsuarioPublicoController
         res = requests.post(f"{API_DEFENSORIA}/usuario/verificar-codigo", json=payload, headers=headers)
