@@ -64,11 +64,17 @@ def proxy_ativar_conta():
             "codigo": dados_front.get("codigo") 
         } 
         
-        # O Flutter envia exatamente Accept: text/plain
-        headers = {'Content-Type': 'application/json', 'Accept': 'text/plain', 'User-Agent': 'Flutter-App'}
-        print("👉 [VERCEL PROXY] Tentando ativação...")
-        res = requests.post(f"{API_DEFENSORIA}/usuario/verificar-codigo", json=payload, headers=headers)
+        # 1. Tentamos a comunicação moderna (JSON)
+        headers_json = {'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Flutter-App'}
+        print("👉 [VERCEL PROXY] Tentando ativação em formato JSON...")
+        res = requests.post(f"{API_DEFENSORIA}/usuario/verificar-codigo", json=payload, headers=headers_json)
         
+        # 2. Se o Java rejeitar com 406 (ou 404/500 de representação incompatível), tentamos o formato antigo (text/plain)
+        if res.status_code in [406, 404, 500]:
+            print(f"⚠️ [VERCEL PROXY] Java falhou com {res.status_code}. Tentando fallback para text/plain...")
+            headers_text = {'Content-Type': 'application/json', 'Accept': 'text/plain', 'User-Agent': 'Flutter-App'}
+            res = requests.post(f"{API_DEFENSORIA}/usuario/verificar-codigo", json=payload, headers=headers_text)
+            
         print(f"👈 [VERCEL PROXY] Java respondeu com Status: {res.status_code}")
         print(f"👈 [VERCEL PROXY] Java body raw: {res.text}")
         
