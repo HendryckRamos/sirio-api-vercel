@@ -58,23 +58,17 @@ def proxy_cadastro():
 def proxy_ativar_conta():
     try:
         dados_front = request.get_json(force=True)
-        # O DTO UsuarioConfirmacaoRequisicao exige APENAS cpf e codigo
+        # O backend Java espera 'id' (que contém o CPF) e 'codigo'
         payload = {
-            "cpf": dados_front.get("cpf"),
+            "id": dados_front.get("cpf"),
             "codigo": dados_front.get("codigo") 
         } 
         
-        # 1. Tentamos a comunicação moderna (JSON)
-        headers_json = {'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Flutter-App'}
-        print("👉 [VERCEL PROXY] Tentando ativação em formato JSON...")
-        res = requests.post(f"{API_DEFENSORIA}/usuario/verificar-codigo", json=payload, headers=headers_json)
+        # O Flutter envia exatamente Accept: text/plain
+        headers = {'Content-Type': 'application/json', 'Accept': 'text/plain', 'User-Agent': 'Flutter-App'}
+        print("👉 [VERCEL PROXY] Tentando ativação...")
+        res = requests.post(f"{API_DEFENSORIA}/usuario/verificar-codigo", json=payload, headers=headers)
         
-        # 2. Se o Java antigo rejeitar com 406 (ou 500 de representação incompatível), tentamos o formato antigo (text/plain)
-        if res.status_code == 406 or (res.status_code == 500 and "HttpMediaTypeNotAcceptableException" in res.text):
-            print("⚠️ [VERCEL PROXY] Java rejeitou JSON. Tentando fallback para text/plain...")
-            headers_text = {'Content-Type': 'application/json', 'Accept': 'text/plain', 'User-Agent': 'Flutter-App'}
-            res = requests.post(f"{API_DEFENSORIA}/usuario/verificar-codigo", json=payload, headers=headers_text)
-            
         print(f"👈 [VERCEL PROXY] Java respondeu com Status: {res.status_code}")
         print(f"👈 [VERCEL PROXY] Java body raw: {res.text}")
         
