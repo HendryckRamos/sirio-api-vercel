@@ -4,6 +4,7 @@ import requests
 import os
 import io
 import base64
+import sys
 from PyPDF2 import PdfReader
 import google.generativeai as genai
 
@@ -58,27 +59,34 @@ def proxy_cadastro():
 def proxy_ativar_conta():
     try:
         dados_front = request.get_json(force=True)
-        # O DTO UsuarioConfirmacaoRequisicao exige APENAS cpf e codigo
         payload = {
             "cpf": dados_front.get("cpf"),
             "codigo": dados_front.get("codigo") 
         } 
-        # O Java agora responde como JSON
         headers = {'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Flutter-App'}
         
-        # A URL mapeada no UsuarioPublicoController
+        # LOG DA REQUISIÇÃO ENVIADA
+        print(f"👉 [VERCEL PROXY] Enviando ativação para Java. Payload: {payload}", file=sys.stderr)
+        
         res = requests.post(f"{API_DEFENSORIA}/usuario/verificar-codigo", json=payload, headers=headers)
+        
+        # LOG DA RESPOSTA RECEBIDA DO JAVA
+        print(f"👈 [VERCEL PROXY] Java respondeu com Status: {res.status_code}", file=sys.stderr)
+        print(f"👈 [VERCEL PROXY] Java headers: {dict(res.headers)}", file=sys.stderr)
+        print(f"👈 [VERCEL PROXY] Java body raw: {res.text}", file=sys.stderr)
         
         if res.status_code in [200, 202, 204]: 
             return jsonify({"mensagem": "Conta ativada com sucesso!"}), 200
             
         try: 
             retorno = res.json()
-        except: 
+        except Exception as e:
+            print(f"⚠️ [VERCEL PROXY] Falha ao decodificar JSON do Java: {str(e)}", file=sys.stderr)
             retorno = {"mensagem": res.text}
             
         return jsonify(retorno), res.status_code
     except Exception as e: 
+        print(f"❌ [VERCEL PROXY] Exceção geral capturada: {str(e)}", file=sys.stderr)
         return jsonify({"mensagem": str(e)}), 500
 
 @app.route('/api/local/usuario/envio-codigo', methods=['POST'])
@@ -176,5 +184,3 @@ Texto: {texto_extraido[:100000]}"""
         return jsonify({"resumo": response.text, "pontosChave": ""}), 200
     except Exception as e:
         return jsonify({"resumo": f"Não foi possível processar a leitura neste momento."}), 500
-
-# Na Vercel, não precisamos do app.run(), ela cuida disso automaticamente.
